@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>YouTu PiP Settings</title>
+  <style>
+    body {
+      width: 300px;
+      padding: 20px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f8f9fa;
+      margin: 0;
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    
+    .header h1 {
+      font-size: 18px;
+      color: #ff0000;
+      margin: 0;
+    }
+    
+    .header p {
+      font-size: 12px;
+      color: #666;
+      margin: 5px 0 0 0;
+    }
+    
+    .setting {
+      margin-bottom: 15px;
+    }
+    
+    .setting label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+      color: #333;
+    }
+    
+    .setting input[type="checkbox"] {
+      margin-right: 8px;
+    }
+    
+    .setting .description {
+      font-size: 11px;
+      color: #666;
+      margin-top: 3px;
+    }
+    
+    .button-container {
+      text-align: center;
+      margin-top: 20px;
+    }
+    
+    button {
+      background-color: #ff0000;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    
+    button:hover {
+      background-color: #cc0000;
+    }
+    
+    .status {
+      text-align: center;
+      padding: 10px;
+      border-radius: 4px;
+      margin: 15px 0;
+      font-size: 12px;
+    }
+    
+    .status.enabled {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    
+    .status.disabled {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>YouTu - YouTube Auto PiP</h1>
+    <p>Automatic Picture-in-Picture for YouTube</p>
+  </div>
+  
+  <div class="setting">
+    <label>
+      <input type="checkbox" id="enablePip" checked>
+      Enable Auto PiP
+    </label>
+    <div class="description">
+      Automatically enter Picture-in-Picture when switching away from YouTube tabs
+    </div>
+  </div>
+  
+  <div class="setting">
+    <label>
+      <input type="checkbox" id="enableNotifications">
+      Show Notifications
+    </label>
+    <div class="description">
+      Display notifications when entering/exiting PiP mode
+    </div>
+  </div>
+  
+  <div class="setting">
+    <label>
+      <input type="checkbox" id="enableWhitelist">
+      Enable Channel Whitelist
+    </label>
+    <div class="description">
+      Only enable PiP for specific channels
+    </div>
+  </div>
+  
+  <div class="setting" id="whitelistContainer" style="display: none;">
+    <label for="whitelist">Channel Whitelist:</label>
+    <textarea id="whitelist" placeholder="Enter channel names, one per line" rows="3"></textarea>
+    <div class="description">
+      Enter channel names where PiP should be enabled
+    </div>
+  </div>
+  
+  <div class="status enabled" id="status">
+    Extension is active
+  </div>
+  
+  <div class="button-container">
+    <button id="saveSettings">Save Settings</button>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
