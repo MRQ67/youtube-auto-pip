@@ -39,6 +39,7 @@ YouTube's SPA (Single Page Application) architecture makes video detection chall
 - MutationObserver to detect DOM changes
 - Periodic checks for video elements
 - YouTube-specific selectors and events
+- Enhanced video state detection (checking if videos are actually playing, not just present)
 
 ### PiP Control
 

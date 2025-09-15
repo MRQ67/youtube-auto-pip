@@ -15,5 +15,8 @@
     "video"
   ],
   "author": "YouTu Developer",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "canvas": "^3.2.0"
+  }
 }
