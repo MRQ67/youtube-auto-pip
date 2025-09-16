@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "YouTu - YouTube Auto PiP",
-  "version": "1.0",
-  "description": "Automatically enables Picture-in-Picture mode for YouTube videos when switching tabs",
+  "name": "YouTu - YouTube Windows PiP",
+  "version": "2.0",
+  "description": "Detects YouTube videos and communicates with Windows app for custom Picture-in-Picture",
   "permissions": [
     "activeTab",
     "tabs",

@@ -1,0 +1,9 @@
+{
+  "name": "com.youtu.pip",
+  "description": "YouTu Picture-in-Picture Windows App Communication",
+  "path": "YouTuPiP.exe",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://YOUR_EXTENSION_ID_HERE/"
+  ]
+}

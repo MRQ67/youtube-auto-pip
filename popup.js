@@ -36,34 +36,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     // Load settings from storage
     const data = await safeGetStorage([
-      'enablePip',
+      'enableDetection',
       'enableNotifications',
-      'enableWhitelist',
-      'whitelist'
+      'enableAutoConnect'
     ]);
     
     // Set checkbox states (with defaults)
-    document.getElementById('enablePip').checked = data.enablePip !== false; // default to true
+    document.getElementById('enableDetection').checked = data.enableDetection !== false; // default to true
     document.getElementById('enableNotifications').checked = data.enableNotifications === true; // default to false
-    document.getElementById('enableWhitelist').checked = data.enableWhitelist === true; // default to false
-    
-    // Set whitelist content
-    if (data.whitelist) {
-      document.getElementById('whitelist').value = data.whitelist.join('\n');
-    }
-    
-    // Show/hide whitelist container based on checkbox
-    document.getElementById('whitelistContainer').style.display = 
-      document.getElementById('enableWhitelist').checked ? 'block' : 'none';
+    document.getElementById('enableAutoConnect').checked = data.enableAutoConnect !== false; // default to true
   } catch (error) {
     console.error('Error loading settings:', error);
   }
   
   // Add event listeners
-  document.getElementById('enableWhitelist').addEventListener('change', function() {
-    document.getElementById('whitelistContainer').style.display = this.checked ? 'block' : 'none';
-  });
-  
   document.getElementById('saveSettings').addEventListener('click', saveSettings);
 });
 
@@ -71,25 +57,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function saveSettings() {
   try {
     // Get current values
-    const enablePip = document.getElementById('enablePip').checked;
+    const enableDetection = document.getElementById('enableDetection').checked;
     const enableNotifications = document.getElementById('enableNotifications').checked;
-    const enableWhitelist = document.getElementById('enableWhitelist').checked;
-    
-    // Process whitelist
-    let whitelist = [];
-    if (enableWhitelist) {
-      const whitelistText = document.getElementById('whitelist').value;
-      whitelist = whitelistText.split('\n')
-        .map(channel => channel.trim())
-        .filter(channel => channel.length > 0);
-    }
+    const enableAutoConnect = document.getElementById('enableAutoConnect').checked;
     
     // Save to storage
     const success = await safeSetStorage({
-      enablePip,
+      enableDetection,
       enableNotifications,
-      enableWhitelist,
-      whitelist
+      enableAutoConnect
     });
     
     // Show confirmation

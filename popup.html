@@ -91,17 +91,17 @@
 </head>
 <body>
   <div class="header">
-    <h1>YouTu - YouTube Auto PiP</h1>
-    <p>Automatic Picture-in-Picture for YouTube</p>
+    <h1>YouTu - Windows PiP</h1>
+    <p>Custom Picture-in-Picture for YouTube</p>
   </div>
   
   <div class="setting">
     <label>
-      <input type="checkbox" id="enablePip" checked>
-      Enable Auto PiP
+      <input type="checkbox" id="enableDetection" checked>
+      Enable Video Detection
     </label>
     <div class="description">
-      Automatically enter Picture-in-Picture when switching away from YouTube tabs
+      Detect YouTube videos and communicate with Windows app
     </div>
   </div>
   
@@ -111,25 +111,17 @@
       Show Notifications
     </label>
     <div class="description">
-      Display notifications when entering/exiting PiP mode
+      Display notifications about Windows app connection status
     </div>
   </div>
   
   <div class="setting">
     <label>
-      <input type="checkbox" id="enableWhitelist">
-      Enable Channel Whitelist
+      <input type="checkbox" id="enableAutoConnect">
+      Auto-Connect to Windows App
     </label>
     <div class="description">
-      Only enable PiP for specific channels
-    </div>
-  </div>
-  
-  <div class="setting" id="whitelistContainer" style="display: none;">
-    <label for="whitelist">Channel Whitelist:</label>
-    <textarea id="whitelist" placeholder="Enter channel names, one per line" rows="3"></textarea>
-    <div class="description">
-      Enter channel names where PiP should be enabled
+      Automatically connect to Windows app on startup
     </div>
   </div>
   
