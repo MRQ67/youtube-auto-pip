@@ -7,7 +7,9 @@
     "activeTab",
     "tabs",
     "scripting",
-    "storage"
+    "storage",
+    "nativeMessaging",
+    "notifications"
   ],
   "host_permissions": [
     "https://www.youtube.com/*",

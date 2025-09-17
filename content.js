@@ -67,21 +67,39 @@ function findYouTubeVideo() {
 
 // Extract video information
 function extractVideoInfo(video) {
-  if (!video) return null;
+  if (!video) {
+    console.warn('Cannot extract video info: video element is null');
+    return null;
+  }
   
-  const videoInfo = {
-    url: window.location.href,
-    title: getVideoTitle(),
-    currentTime: video.currentTime || 0,
-    isPlaying: !video.paused && !video.ended && video.currentTime > 0,
-    volume: video.volume || 1,
-    playbackRate: video.playbackRate || 1,
-    tabId: null, // Will be set by background script
-    windowId: null, // Will be set by background script
-    lastUpdate: Date.now()
-  };
-  
-  return videoInfo;
+  try {
+    const videoInfo = {
+      url: window.location.href,
+      title: getVideoTitle(),
+      currentTime: video.currentTime || 0,
+      isPlaying: !video.paused && !video.ended && video.currentTime > 0,
+      volume: video.volume !== undefined ? video.volume : 1,
+      playbackRate: video.playbackRate !== undefined ? video.playbackRate : 1,
+      tabId: null, // Will be set by background script
+      windowId: null, // Will be set by background script
+      lastUpdate: Date.now()
+    };
+    
+    // Validate extracted data
+    if (!videoInfo.url || videoInfo.url === 'about:blank') {
+      console.warn('Invalid video URL:', videoInfo.url);
+      return null;
+    }
+    
+    if (!videoInfo.title || videoInfo.title === 'Unknown Video') {
+      console.warn('Could not extract video title');
+    }
+    
+    return videoInfo;
+  } catch (error) {
+    console.error('Error extracting video info:', error);
+    return null;
+  }
 }
 
 // Get video title from page
@@ -117,18 +135,27 @@ function shouldTrackVideo(video) {
 
 // Send video data to Windows app
 function sendVideoDataToWindowsApp(videoInfo) {
-  if (!videoInfo) return;
+  if (!videoInfo) {
+    console.error('Cannot send video data: videoInfo is null or undefined');
+    return;
+  }
+  
+  // Validate required fields
+  if (!videoInfo.url || !videoInfo.title) {
+    console.error('Cannot send video data: missing required fields (url or title)');
+    return;
+  }
   
   const message = {
     action: 'create_pip',
     videoUrl: videoInfo.url,
     videoTitle: videoInfo.title,
-    currentTime: videoInfo.currentTime,
-    isPlaying: videoInfo.isPlaying,
-    volume: videoInfo.volume,
-    playbackRate: videoInfo.playbackRate,
-    tabId: videoInfo.tabId,
-    windowId: videoInfo.windowId
+    currentTime: videoInfo.currentTime || 0,
+    isPlaying: videoInfo.isPlaying || false,
+    volume: videoInfo.volume || 1,
+    playbackRate: videoInfo.playbackRate || 1,
+    tabId: videoInfo.tabId || 0,
+    windowId: videoInfo.windowId || 0
   };
   
   console.log('Sending video data to Windows app:', message);

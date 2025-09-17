@@ -1,37 +1,153 @@
-# YouTu - YouTube Windows PiP
+# YouTu - YouTube Windows PiP Extension
 
-A Chrome extension that detects YouTube videos and communicates with a Windows application to provide seamless custom Picture-in-Picture functionality. This extension bypasses browser PiP restrictions by working with a dedicated Windows app.
+A powerful Chrome/Chromium extension that detects YouTube videos and communicates with a companion Windows application to provide seamless custom Picture-in-Picture functionality. This extension bypasses browser PiP limitations by working with a dedicated Windows app through native messaging.
 
-## Features
+## 🚧 **Current Status: IN DEVELOPMENT** ⚠️
 
-- **Automatic Video Detection**: Detects YouTube videos and extracts video information
-- **Tab Switching Detection**: Monitors when you switch away from YouTube tabs
-- **Windows App Communication**: Sends video data to a custom Windows PiP application
-- **Seamless Integration**: Works with any Chromium-based browser
-- **No Browser Restrictions**: Bypasses all PiP API limitations and user gesture requirements
-- **Real-time Sync**: Maintains perfect synchronization between browser and Windows app
+While significant progress has been made on architecture and error handling, **the core PiP functionality is not yet working**. No PiP windows have been successfully created despite extensive troubleshooting.
 
-## Architecture
+### ✨ **Key Features**
+- **🎯 Automatic Video Detection**: Intelligently detects YouTube videos and extracts comprehensive video information
+- **🔄 Smart Tab Management**: Monitors tab switching and automatically creates/closes PiP windows
+- **💬 Native Messaging Communication**: Secure communication with Windows app via Chrome's native messaging API
+- **🔗 Robust Connection Management**: Automatic retry logic with exponential backoff (up to 3 attempts)
+- **💓 Heartbeat Monitoring**: Proactive connection health monitoring every 10 seconds
+- **🛡️ Advanced Error Handling**: Comprehensive error validation with user-friendly notifications
+- **📊 Enhanced Logging**: Detailed timestamped logs for debugging and monitoring
+- **🔧 Message Validation**: Input validation and sanitization for all communications
+- **🌐 Browser Compatibility**: Works with Chrome, Chromium, Thorium, and other Chromium-based browsers
 
-This extension is part of a two-component system:
+### 🏗️ **Architecture Overview**
+```
+YouTube Page → Extension Content Script → Background Service Worker → Native Messaging → Windows Proxy → Windows App → PiP Window
+```
 
-1. **Chrome Extension** (this repo): Detects videos and sends data
-2. **Windows Application** (separate repo): Creates custom PiP windows
+### 📋 **Completed Improvements**
+- ✅ **Enhanced Error Handling**: Comprehensive error validation and user notifications
+- ✅ **Connection Validation**: Retry mechanisms with intelligent backoff
+- ✅ **Heartbeat System**: Bidirectional connection health monitoring
+- ✅ **Message Protocol**: Consistent JSON serialization and validation
+- ✅ **Logging System**: Detailed debug logging with timestamps
+- ✅ **Input Validation**: Robust data validation and sanitization
+- ✅ **Browser Support**: Universal Chromium browser compatibility
 
-## Installation
+### 🚨 **Current Issues & Problems**
 
-### Chrome Extension
+#### **❌ Primary Issue: Native Messaging Host Not Found**
+- **Error**: `Unchecked runtime.lastError: Specified native messaging host not found`
+- **Impact**: Extension cannot communicate with Windows application
+- **Status**: Persistent issue despite multiple registry registration attempts
+- **Browsers Tested**: Chrome, Thorium, Chromium
+- **Registry Paths Tried**: All standard Chrome/Chromium paths
 
-1. Open Chrome and navigate to `chrome://extensions`
-2. Enable "Developer mode" in the top right corner
-3. Click "Load unpacked" and select this extension directory
-4. The extension icon should now appear in your toolbar
+#### **❌ No PiP Windows Created**
+- **Problem**: Despite video detection and tab switching, no PiP windows appear
+- **Video Detection**: ✅ Working (videos are detected correctly)
+- **Tab Switching**: ✅ Working (extension detects tab changes)
+- **Communication**: ❌ Failing (cannot reach Windows app)
+- **Result**: Videos pause but no PiP window is created
 
-### Windows Application
+#### **❌ Browser Compatibility Issues**
+- **Thorium Browser**: Main target browser, native messaging not working
+- **Chrome**: Registry paths exist but communication still fails
+- **Edge/Chromium**: Similar communication failures
+- **Issue**: Each browser may use different native messaging implementations
 
-1. Download and install the Windows application (see `WINDOWS_APP_PROMPT.md`)
-2. Register the native messaging manifest
-3. The extension will automatically connect to the Windows app
+#### **🔍 Troubleshooting Attempts Made**
+1. **Registry Registration**: Multiple paths tried (Chrome, Thorium, Chromium)
+2. **Manifest Validation**: File exists and contains correct paths
+3. **Process Verification**: Both main app and proxy confirmed running
+4. **Path Verification**: Proxy executable exists and is accessible
+5. **Permission Testing**: Tried running as Administrator
+6. **Cache Clearing**: Attempted browser cache clearing (caused extension removal)
+7. **Directory Registration**: Tried both registry and directory-based registration
+
+#### **🤔 Suspected Root Causes**
+1. **Browser-Specific Implementation**: Thorium may use non-standard native messaging
+2. **Security Restrictions**: Windows/browser security blocking communication
+3. **Path Issues**: Manifest path may not be resolving correctly
+4. **Extension ID Mismatch**: Dynamic extension IDs may not match manifest
+5. **Proxy Communication**: Issue between proxy and main Windows application
+
+### 🎯 **Next Steps Required**
+1. **Browser Investigation**: Research Thorium-specific native messaging requirements
+2. **Alternative Communication**: Consider WebSocket or HTTP-based communication
+3. **Debugging Tools**: Implement more detailed native messaging diagnostics
+4. **Simplified Testing**: Create minimal test case to isolate the issue
+5. **Alternative Browsers**: Test with standard Chrome to rule out Thorium-specific issues
+
+## 🏗️ **System Architecture**
+
+This extension is part of a sophisticated two-component system:
+
+1. **🌐 Chrome Extension** (this repository): Video detection, tab management, and browser communication
+2. **🖥️ Windows Application** (companion repository): PiP window creation and video rendering
+
+### **Communication Flow:**
+```
+Browser Tab Switch → Content Script → Background Worker → Native Messaging → Proxy → Windows App → PiP Window Creation
+```
+
+## 📦 **Installation & Setup**
+
+### **Prerequisites**
+- Windows 10/11 (64-bit)
+- Chrome, Chromium, Thorium, or compatible Chromium-based browser
+- .NET 9.0 Runtime (for Windows app)
+- WebView2 Runtime (usually pre-installed on Windows 11)
+
+### **Step 1: Install Chrome Extension**
+
+1. **Download/Clone** this repository
+2. **Open Browser Extensions**:
+   - Chrome: `chrome://extensions`
+   - Thorium: `thorium://extensions`
+   - Edge: `edge://extensions`
+3. **Enable "Developer mode"** (toggle in top right)
+4. **Click "Load unpacked"** and select the `yt-auto-pip_extension` folder
+5. **Verify**: Extension icon should appear in toolbar
+
+### **Step 2: Install Windows Application**
+
+1. **Download** the companion Windows application
+2. **Build** the application using the provided scripts
+3. **Register** native messaging (automatic via setup script)
+4. **Start** the Windows application (runs in system tray)
+
+### **Step 3: Test Connection**
+
+1. **Open Browser DevTools** (`F12` → Console tab)
+2. **Navigate to YouTube** and play any video
+3. **Look for connection messages**:
+   ```
+   [timestamp] Connected to Windows app service successfully
+   [timestamp] Received heartbeat response from Windows app
+   ```
+4. **Test PiP**: Switch tabs while video is playing
+5. **Success**: PiP window should appear with video
+
+## Development Progress
+
+### Phase 1: Extension Development ✅
+- [x] Created manifest.json with proper permissions
+- [x] Implemented background.js service worker
+- [x] Built content.js for YouTube video detection
+- [x] Created popup UI for settings
+- [x] Added native messaging support
+- [x] Fixed extension ID configuration
+
+### Phase 2: Native Messaging Integration 🔧
+- [x] Configured native messaging manifest
+- [x] Added `nativeMessaging` permission
+- [x] Implemented `connectNative()` communication
+- [x] Fixed extension ID: `mmhpkloajoohbnjpdbbpmneldidhmapi`
+- [ ] **BLOCKED**: Windows app service integration
+
+### Phase 3: Windows App Integration 🚧
+- [ ] Configure Windows app for native messaging service
+- [ ] Implement service proxy or hybrid model
+- [ ] Test end-to-end communication
+- [ ] Verify PiP window creation
 
 ## Usage
 
@@ -121,19 +237,34 @@ The Windows application provides:
 
 ## Troubleshooting
 
+### Current Known Issues
+
+#### Native Messaging Service Integration
+**Problem**: Chrome's native messaging expects to launch applications, but the Windows app runs as a persistent service.
+
+**Symptoms**:
+- "Native host has exited" errors
+- "Error when communicating with the native messaging host"
+- "Already running" popups every second
+- No PiP window creation
+
+**Root Cause**: Chrome's `connectNative()` tries to launch `YouTuPiP.exe`, but it's already running as a service.
+
+**Solution Required**: Windows app needs to be restructured for native messaging service compatibility.
+
 ### Extension Issues
 
 1. **Check extension status** in `chrome://extensions`
-2. **Verify permissions** include YouTube sites
+2. **Verify permissions** include YouTube sites and `nativeMessaging`
 3. **Check console** for error messages
 4. **Reload extension** if needed
 
 ### Windows App Connection Issues
 
 1. **Ensure Windows app is running** (check system tray)
-2. **Check native messaging registration**
-3. **Verify extension ID** in native messaging manifest
-4. **Restart both extension and Windows app**
+2. **Check native messaging registration** in Windows Registry
+3. **Verify extension ID** in native messaging manifest: `mmhpkloajoohbnjpdbbpmneldidhmapi`
+4. **Check Windows app logs** for message reception
 
 ### Video Detection Issues
 
@@ -141,6 +272,17 @@ The Windows application provides:
 2. **Check video is playing** (not paused)
 3. **Verify YouTube URL** format
 4. **Check console logs** for detection messages
+
+### Debugging Steps
+
+1. **Open Chrome DevTools** (F12)
+2. **Check Console tab** for extension messages
+3. **Look for**:
+   - "Connecting to existing Windows app service..."
+   - "Connected to Windows app service successfully"
+   - "Sending message to Windows app: {action: 'create_pip'...}"
+4. **Check Windows app logs** for received messages
+5. **Verify native messaging manifest** is properly registered
 
 ## Development
 
@@ -169,6 +311,29 @@ The Windows application provides:
 - Requires Windows application for PiP functionality
 - Native messaging only works on Windows
 - Initial setup requires both extension and Windows app installation
+- **Current**: Windows app must be restructured for native messaging service compatibility
+
+## Technical Challenges Resolved
+
+### Extension Development
+- ✅ Manifest V3 compliance
+- ✅ Service worker implementation
+- ✅ YouTube video detection
+- ✅ Tab switching detection
+- ✅ Native messaging API integration
+- ✅ Extension ID configuration
+
+### Native Messaging Integration
+- ✅ Registry configuration
+- ✅ Extension ID mapping
+- ✅ Permission setup
+- ❌ **BLOCKED**: Service vs Launch model conflict
+
+### Windows App Integration
+- ❌ **PENDING**: Service proxy implementation
+- ❌ **PENDING**: Hybrid launch/service model
+- ❌ **PENDING**: Message processing
+- ❌ **PENDING**: PiP window creation
 
 ## License
 

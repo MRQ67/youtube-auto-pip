@@ -3,10 +3,6 @@
 // Store active YouTube tabs and their video status
 const youtubeTabs = new Map();
 
-// Windows app communication
-let windowsAppProcess = null;
-let windowsAppConnected = false;
-
 // Utility function to check if extension context is still valid
 function isExtensionContextValid() {
   try {
@@ -28,80 +24,286 @@ function isYouTubeUrl(url) {
   }
 }
 
-// Connect to Windows app via Native Messaging
-async function connectToWindowsApp() {
+// Windows app communication
+let windowsAppProcess = null;
+let windowsAppConnected = false;
+let connectionRetryCount = 0;
+let maxRetryAttempts = 3;
+let retryDelay = 1000; // Start with 1 second delay
+let heartbeatInterval = null;
+let lastHeartbeatTime = 0;
+let heartbeatTimeout = 30000; // 30 seconds timeout
+
+// Enhanced logging function
+function log(level, message, data = null) {
+  const timestamp = new Date().toISOString();
+  const logMessage = `[${timestamp}] [${level}] ${message}`;
+  
+  switch (level.toLowerCase()) {
+    case 'error':
+      console.error(logMessage, data || '');
+      break;
+    case 'warn':
+      console.warn(logMessage, data || '');
+      break;
+    case 'info':
+      console.log(logMessage, data || '');
+      break;
+    case 'debug':
+      console.debug(logMessage, data || '');
+      break;
+    default:
+      console.log(logMessage, data || '');
+  }
+}
+
+// Show notification to user
+function showNotification(title, message) {
+  try {
+    if (chrome.notifications) {
+      chrome.notifications.create({
+        type: 'basic',
+        iconUrl: 'icons/icon48.png',
+        title: title,
+        message: message
+      });
+    }
+  } catch (error) {
+    console.warn('Could not show notification:', error);
+  }
+}
+
+// Start heartbeat mechanism
+function startHeartbeat() {
+  if (heartbeatInterval) {
+    clearInterval(heartbeatInterval);
+  }
+  
+  heartbeatInterval = setInterval(() => {
+    if (windowsAppConnected && windowsAppProcess) {
+      const now = Date.now();
+      
+      // Check if we haven't received a response in too long
+      if (now - lastHeartbeatTime > heartbeatTimeout) {
+        console.warn('Heartbeat timeout - connection may be lost');
+        windowsAppConnected = false;
+        windowsAppProcess = null;
+        
+        // Attempt to reconnect
+        if (connectionRetryCount < maxRetryAttempts) {
+          console.log('Attempting to reconnect due to heartbeat timeout...');
+          connectToWindowsApp(true);
+        }
+      } else {
+        // Send heartbeat ping
+        try {
+          windowsAppProcess.postMessage({
+            action: 'heartbeat',
+            timestamp: now
+          });
+        } catch (error) {
+          console.warn('Failed to send heartbeat:', error);
+          windowsAppConnected = false;
+          windowsAppProcess = null;
+        }
+      }
+    }
+  }, 10000); // Send heartbeat every 10 seconds
+}
+
+// Stop heartbeat mechanism
+function stopHeartbeat() {
+  if (heartbeatInterval) {
+    clearInterval(heartbeatInterval);
+    heartbeatInterval = null;
+  }
+}
+
+// Connect to Windows app via Native Messaging (reuse existing connection)
+async function connectToWindowsApp(forceReconnect = false) {
   try {
     if (!isExtensionContextValid()) return;
     
-    console.log('Attempting to connect to Windows app...');
+    // If already connected and not forcing reconnect, don't reconnect
+    if (windowsAppConnected && windowsAppProcess && !forceReconnect) {
+      return;
+    }
     
-    // Try to connect to Windows app
+    console.log(`Connecting to Windows app service... (attempt ${connectionRetryCount + 1}/${maxRetryAttempts})`);
+    
+    // Clean up existing connection if any
+    if (windowsAppProcess) {
+      try {
+        windowsAppProcess.disconnect();
+      } catch (e) {
+        // Ignore disconnect errors
+      }
+      windowsAppProcess = null;
+    }
+    
+    // Connect to the Windows app service via proxy
     windowsAppProcess = chrome.runtime.connectNative('com.youtu.pip');
     
     windowsAppProcess.onMessage.addListener((message) => {
       console.log('Received message from Windows app:', message);
-      handleWindowsAppMessage(message);
+      handleWindowsAppResponse(message);
+      
+      // Reset retry count on successful message
+      connectionRetryCount = 0;
+      retryDelay = 1000;
     });
     
-    windowsAppProcess.onDisconnect.addListener(() => {
-      console.log('Disconnected from Windows app');
+    windowsAppProcess.onDisconnect.addListener((error) => {
+      console.log('Disconnected from Windows app:', error);
       windowsAppConnected = false;
       windowsAppProcess = null;
+      
+      // Attempt to reconnect if not manually disconnected
+      if (connectionRetryCount < maxRetryAttempts) {
+        console.log(`Connection lost, attempting to reconnect in ${retryDelay}ms...`);
+        setTimeout(() => {
+          connectionRetryCount++;
+          retryDelay = Math.min(retryDelay * 2, 10000); // Exponential backoff, max 10 seconds
+          connectToWindowsApp(true);
+        }, retryDelay);
+      } else {
+        console.error('Max retry attempts reached. Windows app connection failed.');
+        showNotification('YouTu PiP Connection Failed', 'Unable to connect to Windows app. Please ensure the app is running.');
+      }
     });
     
     windowsAppConnected = true;
-    console.log('Connected to Windows app successfully');
+    connectionRetryCount = 0;
+    retryDelay = 1000;
+    lastHeartbeatTime = Date.now();
+    console.log('Connected to Windows app service successfully');
+    
+    // Start heartbeat mechanism
+    startHeartbeat();
     
   } catch (error) {
     console.error('Failed to connect to Windows app:', error);
     windowsAppConnected = false;
     windowsAppProcess = null;
-  }
-}
-
-// Handle messages from Windows app
-function handleWindowsAppMessage(message) {
-  try {
-    switch (message.action) {
-      case 'pip_created':
-        console.log('Windows app created PiP window');
-        break;
-        
-      case 'pip_closed':
-        console.log('Windows app closed PiP window');
-        break;
-        
-      case 'state_change':
-        console.log('Windows app state change:', message);
-        break;
-        
-      case 'error':
-        console.error('Windows app error:', message);
-        break;
-        
-      default:
-        console.log('Unknown message from Windows app:', message);
+    
+    // Retry connection if we haven't exceeded max attempts
+    if (connectionRetryCount < maxRetryAttempts) {
+      connectionRetryCount++;
+      retryDelay = Math.min(retryDelay * 2, 10000);
+      console.log(`Connection failed, retrying in ${retryDelay}ms... (attempt ${connectionRetryCount}/${maxRetryAttempts})`);
+      setTimeout(() => connectToWindowsApp(true), retryDelay);
+    } else {
+      console.error('Max retry attempts reached. Windows app connection failed.');
+      showNotification('YouTu PiP Connection Failed', 'Unable to connect to Windows app. Please ensure the app is running.');
     }
-  } catch (error) {
-    console.error('Error handling Windows app message:', error);
   }
 }
 
 // Send message to Windows app
-function sendToWindowsApp(data) {
-  if (!windowsAppConnected || !windowsAppProcess) {
-    console.log('Windows app not connected, attempting to connect...');
-    connectToWindowsApp();
-    return;
-  }
-  
+function sendToWindowsApp(data, retryCount = 0) {
   try {
+    if (!isExtensionContextValid()) return;
+    
+    // Validate message data
+    if (!data || typeof data !== 'object') {
+      console.error('Invalid message data:', data);
+      return;
+    }
+    
+    // Ensure we have a connection
+    if (!windowsAppConnected || !windowsAppProcess) {
+      console.log('Not connected to Windows app, attempting to connect...');
+      connectToWindowsApp();
+      
+      // Wait a moment for connection, then try to send
+      setTimeout(() => {
+        if (windowsAppConnected && windowsAppProcess) {
+          try {
+            windowsAppProcess.postMessage(data);
+            console.log('Sent message to Windows app:', data);
+          } catch (error) {
+            console.error('Failed to send message after connection:', error);
+            if (retryCount < 2) {
+              setTimeout(() => sendToWindowsApp(data, retryCount + 1), 500);
+            }
+          }
+        } else {
+          console.log('Could not establish connection to Windows app');
+          if (retryCount < 2) {
+            setTimeout(() => sendToWindowsApp(data, retryCount + 1), 1000);
+          }
+        }
+      }, 100);
+      return;
+    }
+    
+    // Send message through existing connection
     windowsAppProcess.postMessage(data);
     console.log('Sent message to Windows app:', data);
+    
   } catch (error) {
     console.error('Failed to send message to Windows app:', error);
+    
+    // Mark connection as failed and attempt to reconnect
     windowsAppConnected = false;
     windowsAppProcess = null;
+    
+    // Retry sending the message if we haven't exceeded retry limit
+    if (retryCount < 2) {
+      console.log(`Retrying message send in 500ms... (attempt ${retryCount + 1}/2)`);
+      setTimeout(() => sendToWindowsApp(data, retryCount + 1), 500);
+    } else {
+      console.error('Max retry attempts reached for message send');
+      showNotification('YouTu PiP Error', 'Failed to communicate with Windows app. Please check if the app is running.');
+    }
+  }
+}
+
+// Handle responses from Windows app
+function handleWindowsAppResponse(response) {
+  try {
+    if (!response || typeof response !== 'object') {
+      console.error('Invalid response from Windows app:', response);
+      return;
+    }
+    
+    console.log('Processing response from Windows app:', response);
+    
+    switch (response.action) {
+      case 'pip_created':
+        if (response.success) {
+          console.log('Windows app created PiP window successfully');
+          showNotification('YouTu PiP', 'Picture-in-Picture window created');
+        } else {
+          console.error('Windows app failed to create PiP window:', response.error);
+          showNotification('YouTu PiP Error', `Failed to create PiP window: ${response.error || 'Unknown error'}`);
+        }
+        break;
+        
+      case 'pip_closed':
+        console.log('Windows app closed PiP window:', response.reason);
+        break;
+        
+      case 'state_change':
+        console.log('Windows app state change:', response);
+        break;
+        
+      case 'heartbeat':
+        // Update last heartbeat time
+        lastHeartbeatTime = Date.now();
+        console.log('Received heartbeat response from Windows app');
+        break;
+        
+      case 'error':
+        console.error('Windows app error:', response);
+        showNotification('YouTu PiP Error', `Windows app error: ${response.message || 'Unknown error'}`);
+        break;
+        
+      default:
+        console.log('Unknown response from Windows app:', response);
+    }
+  } catch (error) {
+    console.error('Error handling Windows app response:', error);
   }
 }
 
@@ -306,13 +508,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 // Initialize connection to Windows app on startup
 chrome.runtime.onStartup.addListener(() => {
-  console.log('Extension startup - attempting to connect to Windows app');
+  console.log('Extension startup - connecting to existing Windows app service');
   connectToWindowsApp();
 });
 
 // Connect to Windows app when extension is installed/enabled
 chrome.runtime.onInstalled.addListener(() => {
-  console.log('Extension installed - attempting to connect to Windows app');
+  console.log('Extension installed - connecting to existing Windows app service');
   connectToWindowsApp();
 });
 
